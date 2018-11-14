@@ -1,3 +1,4 @@
+var helicopterMesh;
 class Helicopter {
     constructor(world) {
         var box_material = Physijs.createMaterial(
@@ -14,13 +15,9 @@ class Helicopter {
             6,
             -6
         );
-        box.rotation.set(
-            Math.random() * Math.PI * 2,
-            Math.random() * Math.PI * 2,
-            Math.random() * Math.PI * 2
-        );
 
         box.castShadow = true;
+        helicopterMesh = box;
         world.addObject(box);
     }
 }

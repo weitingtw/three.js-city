@@ -94,12 +94,11 @@ class Lawn {
         //streetlight
         if (Math.random() > 0.5) {
             var streetlight1 = new StreetLight(min_length + 0.5, 0, min_width + 0.5, column_material, bulb_material, world);
-        }//var streetlight2 = new StreetLight(max_length - 0.5, 0, max_width - 0.5, column_material, bulb_material, world)
-
-
+        }
 
         // ground
-        var ground_geometry = new THREE.PlaneGeometry(length, width, 10, 10);
+        var ground_geometry = new THREE.PlaneGeometry(length, width, 30, 30);
+
         var ground_material = new THREE.MeshLambertMaterial({
             map: ground_texture
         })
@@ -108,6 +107,7 @@ class Lawn {
         groundMesh.position.y = 0.02;
         groundMesh.position.z = z;
         groundMesh.rotation.x = -90 * (Math.PI / 180);
+        groundMesh.receiveShadow = true;
         world.addObject(groundMesh);
     }
 

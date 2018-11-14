@@ -58,6 +58,7 @@ THREEx.DayNight.SunLight = function () {
 		light.position.x = 0;
 		light.position.y = Math.sin(sunAngle) * 90000;
 		light.position.z = Math.cos(sunAngle) * 90000;
+		light.castShadow = true;
 		// console.log('Phase ', THREEx.DayNight.currentPhase(sunAngle))
 
 		var phase = THREEx.DayNight.currentPhase(sunAngle)

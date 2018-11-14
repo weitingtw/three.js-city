@@ -17,6 +17,10 @@ class Intersection {
         world.addObject(intersectionMesh);
         this.boundary1 = boundary1;
         this.boundary2 = boundary2;
+
+        /*if (Math.random() > 0.8) {
+            var mirror = new Mirror(this.min_x, 0, this.mix_z, world);
+        }*/
     }
 
     intersect(car) {

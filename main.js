@@ -6,9 +6,29 @@ var initScene, render, _boxes = [], spawnBox, loader,
   renderer, ground_material, ground, light, camera;
 
 var sunSphere, sunLight, skydom, starField, sunAngle;
-var dayDuration = 100;
+
+var physics_stats, render_stats, box_material;
+var gravityConstant = - 9.8;
 var myWorld = new World("viewport");
 
+//
+var params = {
+  DayNightCycle: 100,
+  addHouse: function () {
+    addHouse(myWorld);
+  },
+  addMirror: function () {
+    addMirror(myWorld);
+  },
+  addFog: function () {
+    var fogColor = new THREE.Color(0x999999);
+    myWorld.scene.background = fogColor;
+    myWorld.scene.fog = new THREE.Fog(fogColor, 0.0025, 50);
+  }
+}
+
+var dayDuration = params.DayNightCycle;
+setupUI();
 // textures
 var texture = new THREE.Texture(generateTexture());
 var texture2 = new THREE.Texture(generateTexture2());
@@ -44,9 +64,35 @@ var cars = [];
 var lights = [];
 var fireworks = [];
 var glowMesh = [];
+var dayLight;
+var nightLight;
 
 
 var init = function () {
+
+  myWorld.scene.addEventListener(
+    'update',
+    function () {
+      applyForce();
+      console.log("update");
+      myWorld.scene.simulate(undefined, 1);
+      physics_stats.update();
+    }
+  );
+
+  render_stats = new Stats();
+  render_stats.domElement.style.position = 'absolute';
+  render_stats.domElement.style.top = '1px';
+  render_stats.domElement.style.zIndex = 100;
+  document.getElementById('viewport').appendChild(render_stats.domElement);
+
+  physics_stats = new Stats();
+  physics_stats.domElement.style.position = 'absolute';
+  physics_stats.domElement.style.top = '50px';
+  physics_stats.domElement.style.zIndex = 100;
+
+  document.getElementById('viewport').appendChild(physics_stats.domElement);
+
   // day and night
   sunSphere = new THREEx.DayNight.SunSphere()
   myWorld.addObject(sunSphere.object3d)
@@ -87,29 +133,28 @@ var init = function () {
   light.shadowBias = -.0001
   light.shadowMapWidth = light.shadowMapHeight = 2048;
   light.shadowDarkness = .7;
-  //myWorld.addObject(light);
 
-  //var light2 = new THREE.SpotLight(0xffff00, 2, 10);
-  //light2.position.set(-9.55, 1.15, - 10);
-  //myWorld.addObject(light2);
-  var light2 = new THREE.AmbientLight(0x404040); // soft white light
-  light2.intensity = 0.5;
-  myWorld.addObject(light2);
-  //var light2 = new THREE.AmbientLight(0x101010);
-  //myWorld.addObject(light2);
+  // day night ambient light
+  nightLight = new THREE.AmbientLight(0x404040);
+  nightLight.intensity = 0.5;
+  dayLight = new THREE.AmbientLight(0x999999);
+  dayLight.intensity = 0.5;
+
 
   // Ground
   var ground_texture;
   var textureLoader = new THREE.TextureLoader();
-  var ground_texture = new textureLoader.load("images/cement.jpg");
+  var ground_texture = new textureLoader.load("images/mud.jpg");
 
   // road
-  var road_texture = new textureLoader.load("images/mud.jpg");
+  var road_texture = new textureLoader.load("images/road.jpg");
   for (var i = 0; i < 31; i++) {
     for (var j = 0; j < 31; j++) {
-      var horizontal_road = new Road(-6 + 2 * i, 0.01, -6 + 2 * j, 2, 2, 0, road_texture, myWorld);
-      //var horizontal_road = new Road(24, 0.01, -6 + i * 12, 62, 2, 0, road_texture, myWorld);
-      //var vertical_road = new Road(-6 + i * 12, 0.02, 24, 62, 2, -90 * (Math.PI / 180), road_texture, myWorld);
+      if (i % 6 != 0) {
+        var horizontal_road = new Road(-6 + 2 * i, 0.01, -6 + 2 * j, 2, 2, -90 * (Math.PI / 180), road_texture, myWorld);
+      } else {
+        var vertical_road = new Road(-6 + 2 * i, 0.01, -6 + 2 * j, 2, 2, 0, road_texture, myWorld);
+      }
     }
   }
   /*
@@ -138,11 +183,15 @@ var init = function () {
   }
 
   // ground
-  ground_material = new THREE.MeshLambertMaterial({
+  /*ground_material = new THREE.MeshLambertMaterial({
     color: 0x8B4513,
     side: THREE.DoubleSide
-  });
-
+  });*/
+  ground_material = Physijs.createMaterial(
+    new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
+    .8, // high friction
+    .4 // low restitution
+  );
   ground = new Physijs.BoxMesh(
     new THREE.PlaneGeometry(200, 200, 1, 1),
     ground_material,
@@ -156,17 +205,6 @@ var init = function () {
   // helicopter
   //var helicopter1 = new Helicopter(myWorld);
 
-  // light 
-  var spotlight = new THREE.SpotLight(0xffee88, 2, 20, 20);
-  spotlight.position.x = -6;
-  spotlight.position.y = 5;
-  spotlight.position.z = -6;
-
-  var target = new THREE.Object3D();
-  target.position.set(-6, 0.2, -6);
-  spotlight.target = target;
-  //myWorld.addObject(spotlight);
-  //myWorld.addObject(target);
 
   // Lawn
   for (var i = 0; i < 5; i++) {
@@ -175,6 +213,8 @@ var init = function () {
       lawns.push(Lawn1);
     }
   }
+
+
 
   //firework
   var firework1 = new Firework(myWorld);
@@ -186,6 +226,9 @@ var init = function () {
   //fireworks.push(firework3);
   //fireworks.push(firework4);
 
+  // helicopter
+
+  var helicopter = new Helicopter(myWorld);
   // Car
   var car1 = new Car(-6.5, 0, -4, myWorld);
   var car2 = new Car(5.5, 0, 10, myWorld);
@@ -216,32 +259,37 @@ var init = function () {
   console.log(draggableObjects);
   requestAnimationFrame(render);
   myWorld.scene.simulate();
+
 };
 
 var dayUpdate = true;
 var nightUpdate = true;
 render = function () {
   requestAnimationFrame(render);
+  render_stats.update();
   myWorld.render();
   myWorld.controls.update();
   sunSphere.update(sunAngle)
   sunLight.update(sunAngle)
   skydom.update(sunAngle)
   starField.update(sunAngle)
-  sunAngle += 0.05 / dayDuration * Math.PI * 2
-
+  sunAngle += 0.05 / params.DayNightCycle * Math.PI * 2
   //change building texture
   if (sunAngle > 0 && Math.floor(sunAngle / Math.PI) % 2 == 0 && dayUpdate) {
     for (var i = 0; i < lawns.length; i++) {
       lawns[i].updateDay();
     }
-
+    myWorld.addObject(dayLight);
+    myWorld.removeObject(nightLight);
     dayUpdate = false;
     nightUpdate = true;
   } else if ((sunAngle < 0 || Math.floor(sunAngle / Math.PI) % 2 == 1) && nightUpdate) {
     for (var i = 0; i < lawns.length; i++) {
       lawns[i].updateNight();
     }
+    myWorld.addObject(nightLight);
+    myWorld.removeObject(dayLight);
+
     nightUpdate = false;
     dayUpdate = true;
   }

@@ -21,8 +21,8 @@ class World {
     this.scene.addEventListener(
       'update',
       function () {
-        this.scene.simulate(undefined, 1);
-        //physics_stats.update();
+        myWorld.scene.simulate(undefined, 1);
+        physics_stats.update();
       }
     );
 

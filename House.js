@@ -32,10 +32,10 @@ class House {
             color: Math.random() * 0xffffff
         });
         var roofMesh = new THREE.Mesh(roofGeometry, roofMaterial);
-        roofMesh.position.y += 0.51;
+        //roofMesh.position.y += 0.51;
 
         var bodyGeometry = new THREE.BoxGeometry(1.4, 1, 2, 4, 4, 4);
-        var bodyMaterial = new THREE.MeshLambertMaterial({ color: Math.random() * 0xffffff });
+        var bodyMaterial = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
         var bodyMesh = new THREE.Mesh(bodyGeometry, bodyMaterial);
         bodyMesh.position.y += 0.5;
 
@@ -44,26 +44,26 @@ class House {
         this.windowNightMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
         var windowMesh = new THREE.Mesh(windowGeometry, this.windowNightMaterial);
         windowMesh.position.x = -0.71;
-        windowMesh.position.y = 0.61;
+        //windowMesh.position.y = 0.61;
         windowMesh.position.z = 0.4;
         windowMesh.rotation.y += Math.PI / 2;
 
         var windowMesh2 = new THREE.Mesh(windowGeometry, this.windowNightMaterial);
         windowMesh2.position.x = -0.71;
-        windowMesh2.position.y = 0.61;
+        //windowMesh2.position.y = 0.61;
         windowMesh2.position.z = -0.4;
         windowMesh2.rotation.y += Math.PI / 2;
 
         var windowMesh3 = new THREE.Mesh(windowGeometry, this.windowNightMaterial);
         windowMesh3.position.x = 0.71;
-        windowMesh3.position.y = 0.61;
+        //windowMesh3.position.y = 0.61;
         windowMesh3.position.z = -0.4;
         windowMesh3.rotation.y += Math.PI / 2;
 
 
         var windowMesh4 = new THREE.Mesh(windowGeometry, this.windowNightMaterial);
         windowMesh4.position.x = 0.71;
-        windowMesh4.position.y = 0.61;
+        //windowMesh4.position.y = 0.61;
         windowMesh4.position.z = 0.4;
         windowMesh4.rotation.y += Math.PI / 2;
 
@@ -74,19 +74,29 @@ class House {
         this.windowMeshes.push(windowMesh4);
 
         this.house = new THREE.Group();
-        this.house.add(roofMesh);
+        bodyMesh.add(roofMesh);
+        bodyMesh.add(windowMesh);
+        bodyMesh.add(windowMesh2);
+        bodyMesh.add(windowMesh3);
+        bodyMesh.add(windowMesh4);
+        bodyMesh.castShadow = true;
+
+        /*bodyMesh.children[1].x = -0.71;
+        bodyMesh.children[1].y = 0.61;
+        bodyMesh.children[1].z = 0.4;*/
+        //this.house.add(roofMesh);
         this.house.add(bodyMesh);
-        this.house.add(windowMesh);
-        this.house.add(windowMesh2);
-        this.house.add(windowMesh3);
-        this.house.add(windowMesh4);
+        //this.house.add(windowMesh);
+        //this.house.add(windowMesh2);
+        //this.house.add(windowMesh3);
+        //this.house.add(windowMesh4);
 
         this.house.position.x = x;
         this.house.position.y = y;
         this.house.position.z = z;
 
         world.addObject(this.house);
-        //draggableObjects.push(roofMesh);
+        draggableObjects.push(bodyMesh);
     }
 
     updateDay() {
