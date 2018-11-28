@@ -9,35 +9,9 @@ class Lawn {
         max_width = z + width / 2;
         min_width = z - width / 2;
 
-        //grass
-        /*for (var i = 0; i < number / 2; i++) {
-            var rand_x = min_length + Math.random() * (max_length - min_length);
-            var rand_z = min_width + Math.random() * (max_width - min_width);
-            this.grass_positions.push(new THREE.Vector3(rand_x, 0, rand_z));
-        }
-
-        this.mesh = new THREEx.createGrassTufts(this.grass_positions);
-        var textureUrl = './threex.grass-master/images/flowers01.png'
-        var material = this.mesh.material
-        material.map = THREE.ImageUtils.loadTexture(textureUrl)
-        material.alphaTest = 0.7
-        world.addObject(this.mesh);
-
-        for (var i = 0; i < number; i++) {
-            var rand_x = min_length + Math.random() * (max_length - min_length);
-            var rand_z = min_width + Math.random() * (max_width - min_width);
-            this.grass_positions.push(new THREE.Vector3(rand_x, 0, rand_z));
-        }
-
-        this.mesh = new THREEx.createGrassTufts(this.grass_positions);
-        var textureUrl = './threex.grass-master/images/grass02.png'
-        var material = this.mesh.material
-        material.map = THREE.ImageUtils.loadTexture(textureUrl)
-        material.alphaTest = 0.7
-        world.addObject(this.mesh);*/
-
         this.random_type = Math.random() > 0.5 ? 1 : 0;
         this.houses = [];
+
         // buildings
         if (this.random_type == 1) {
             var buildingsGeometry = new THREE.Geometry();
@@ -84,15 +58,21 @@ class Lawn {
             this.buildingsMesh.castShadow = true;
             this.buildingsMesh.receiveShadow = true;
             world.addObject(this.buildingsMesh);
-        } else if (this.random_type == 0) {
+        }
+        // houses
+        else if (this.random_type == 0) {
             for (var i = 0; i < 2; i++) {
                 for (var j = 1; j < 4; j++) {
                     this.houses.push(new House(min_length + 2 + 6 * i, 0, min_width + j * 3 - 0.5, world));
                 }
             }
+            if (Math.random() > 0.85) {
+                campfires.push(new CampFire(x, y + 0.5, z, world));
+            }
         }
+
         //streetlight
-        if (Math.random() > 0.5) {
+        if (Math.random() > 0.7) {
             var streetlight1 = new StreetLight(min_length + 0.5, 0, min_width + 0.5, column_material, bulb_material, world);
         }
 

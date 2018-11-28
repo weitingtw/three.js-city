@@ -1,3 +1,0 @@
-define( [ './threex.terrain'
-	], function(){
-})

@@ -1,17 +1,8 @@
-"use strict";
-Physijs.scripts.worker = './Physijs-master/physijs_worker.js';
-Physijs.scripts.ammo = 'examples/js/ammo.js';
-
-var initScene, render, _boxes = [], spawnBox, loader,
-  renderer, ground_material, ground, light, camera;
-
+var initScene, render, ground_material, light, ground;
 var sunSphere, sunLight, skydom, starField, sunAngle;
-
-var physics_stats, render_stats, box_material;
-var gravityConstant = - 9.8;
 var myWorld = new World("viewport");
 
-//
+// UI
 var params = {
   DayNightCycle: 100,
   addHouse: function () {
@@ -26,10 +17,10 @@ var params = {
     myWorld.scene.fog = new THREE.Fog(fogColor, 0.0025, 50);
   }
 }
-
 var dayDuration = params.DayNightCycle;
 setupUI();
-// textures
+
+// house textures
 var texture = new THREE.Texture(generateTexture());
 var texture2 = new THREE.Texture(generateTexture2());
 texture.anisotropy = myWorld.renderer.capabilities.getMaxAnisotropy();
@@ -37,6 +28,8 @@ texture.needsUpdate = true;
 texture2.anisotropy = myWorld.renderer.capabilities.getMaxAnisotropy();
 texture2.needsUpdate = true;
 
+
+// house materials
 var night_material = new THREE.MeshBasicMaterial({
   vertexColors: THREE.VertexColors,
   map: texture2
@@ -46,11 +39,10 @@ var day_material = new THREE.MeshLambertMaterial({
   vertexColors: THREE.VertexColors,
   map: texture
 });
-var lawns = [];
 
+
+// streetlight material
 var column_material = new THREE.MeshStandardMaterial({
-  //emissive: 0x,
-  //emissiveIntensity: 1,
   color: 0x000000
 });
 var bulb_material = new THREE.MeshStandardMaterial({
@@ -59,39 +51,40 @@ var bulb_material = new THREE.MeshStandardMaterial({
   color: 0xffffee
 });
 
+// global objects
+var lawns = [];
+var lights = [];
 var intersections = [];
 var cars = [];
-var lights = [];
 var fireworks = [];
 var glowMesh = [];
+var campfires = [];
+
 var dayLight;
 var nightLight;
+var bufferScene;
+var reflectionTexture;
+var refractionTexture;
+var reflection_clippingPlane;
+
+var globalPlane1;
+var globalPlane2;
+var water;
+var watery;
+var water_camera;
+
+var PI = Math.PI
+var cos = Math.cos
+var sin = Math.sin
+var frame = 0
+var fireLife = 70
+
+// for water shader;
+var water_mix;
+var move_factor = 0;
 
 
 var init = function () {
-
-  myWorld.scene.addEventListener(
-    'update',
-    function () {
-      applyForce();
-      console.log("update");
-      myWorld.scene.simulate(undefined, 1);
-      physics_stats.update();
-    }
-  );
-
-  render_stats = new Stats();
-  render_stats.domElement.style.position = 'absolute';
-  render_stats.domElement.style.top = '1px';
-  render_stats.domElement.style.zIndex = 100;
-  document.getElementById('viewport').appendChild(render_stats.domElement);
-
-  physics_stats = new Stats();
-  physics_stats.domElement.style.position = 'absolute';
-  physics_stats.domElement.style.top = '50px';
-  physics_stats.domElement.style.zIndex = 100;
-
-  document.getElementById('viewport').appendChild(physics_stats.domElement);
 
   // day and night
   sunSphere = new THREEx.DayNight.SunSphere()
@@ -99,7 +92,6 @@ var init = function () {
 
   sunLight = new THREEx.DayNight.SunLight()
   myWorld.addObject(sunLight.object3d)
-
   skydom = new THREEx.DayNight.Skydom()
   myWorld.addObject(skydom.object3d)
 
@@ -107,10 +99,8 @@ var init = function () {
   myWorld.addObject(starField.object3d)
 
   sunAngle = -1 / 6 * Math.PI * 2;
-  // the day duraction in seconds
 
   // dragcontrol
-
   var dragControls = new THREE.DragControls(
     draggableObjects,
     myWorld.camera,
@@ -140,7 +130,6 @@ var init = function () {
   dayLight = new THREE.AmbientLight(0x999999);
   dayLight.intensity = 0.5;
 
-
   // Ground
   var ground_texture;
   var textureLoader = new THREE.TextureLoader();
@@ -157,11 +146,7 @@ var init = function () {
       }
     }
   }
-  /*
-    for (var i = 0; i < 6; i++) {
-      var horizontal_road = new Road(24, 0.01, -6 + i * 12, 62, 2, 0, road_texture, myWorld);
-      var vertical_road = new Road(-6 + i * 12, 0.02, 24, 62, 2, -90 * (Math.PI / 180), road_texture, myWorld);
-    }*/
+
   // intersection
   var intersection_texture = new textureLoader.load("images/cement.jpg");
   for (var i = 0; i < 6; i++) {
@@ -181,106 +166,134 @@ var init = function () {
       intersections.push(new Intersection(-6 + i * 12, 0.03, -6 + j * 12, 2, 2, intersection_texture, myWorld, boundary1, boundary2));
     }
   }
-
   // ground
-  /*ground_material = new THREE.MeshLambertMaterial({
+  ground_material = new THREE.MeshLambertMaterial({
     color: 0x8B4513,
     side: THREE.DoubleSide
-  });*/
-  ground_material = Physijs.createMaterial(
-    new THREE.MeshLambertMaterial({ color: 0x8B4513 }),
-    .8, // high friction
-    .4 // low restitution
-  );
-  ground = new Physijs.BoxMesh(
-    new THREE.PlaneGeometry(200, 200, 1, 1),
-    ground_material,
-    0 // mass
-  );
-
-  ground.receiveShadow = true;
+  });
+  var ground_geometry = new THREE.PlaneGeometry(200, 200, 1, 1);
+  ground = new THREE.Mesh(ground_geometry, ground_material);
+  //ground.receiveShadow = true;
   ground.rotation.x = -90 * (Math.PI / 180);
   myWorld.addObject(ground);
-
-  // helicopter
-  //var helicopter1 = new Helicopter(myWorld);
-
 
   // Lawn
   for (var i = 0; i < 5; i++) {
     for (var j = 0; j < 5; j++) {
-      var Lawn1 = new Lawn(i * 12, 0, j * 12, 10, 10, 2000, ground_texture, day_material, night_material, column_material, bulb_material, myWorld);
-      lawns.push(Lawn1);
+      if (i != 2 || j != 2) {
+        var Lawn1 = new Lawn(i * 12, 0, j * 12, 10, 10, 2000, ground_texture, day_material, night_material, column_material, bulb_material, myWorld);
+        lawns.push(Lawn1);
+      }
     }
   }
-
-
-
   //firework
   var firework1 = new Firework(myWorld);
   var firework2 = new Firework(myWorld);
-  //var firework3 = new Firework(myWorld);
-  //var firework4 = new Firework(myWorld);
   fireworks.push(firework1);
   fireworks.push(firework2);
-  //fireworks.push(firework3);
-  //fireworks.push(firework4);
 
-  // helicopter
+  //fire
 
-  var helicopter = new Helicopter(myWorld);
   // Car
   var car1 = new Car(-6.5, 0, -4, myWorld);
   var car2 = new Car(5.5, 0, 10, myWorld);
-  //var car3 = new Car(5.5, 0, 34, myWorld);
-  //var car4 = new Car(17.5, 0, 46, myWorld);
   cars.push(car1);
   cars.push(car2);
-  //cars.push(car3);
-  //cars.push(car4);
 
-  /*var heightMap = THREEx.Terrain.allocateHeightMap(100, 100);
-  THREEx.Terrain.simplexHeightMap(heightMap);
-  var geometry = THREEx.Terrain.heightMapToPlaneGeometry(heightMap);
-  THREEx.Terrain.heightMapToVertexColor(heightMap, geometry)
-  // init the material
-  var material = new THREE.MeshPhongMaterial({
-    shading: THREE.SmoothShading,
-    vertexColors: THREE.VertexColors,
+
+  //water 
+  water_mix = 0.1;
+  watery = 0.2;
+  var dudvTexture = new textureLoader.load("images/waterdudv.jpg");
+  var normalMapTexture = new textureLoader.load("images/normal.jpg");
+  reflectionTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight,
+    { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter });
+
+  refractionTexture = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight,
+    { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter });
+
+  var uniforms = {
+    lightPosition: { type: "v3", value: sunLight.object3d.position },
+    lightColor: { type: "c", value: sunLight.object3d.color },
+    move_factor: { type: "f", value: move_factor },
+    water_mix: { type: "f", value: water_mix },
+    dudv: { type: "t", value: dudvTexture },
+    normalMap: { type: "t", value: normalMapTexture },
+    reflectionTexture: { type: "t", value: reflectionTexture },
+    refractionTexture: { type: "t", value: ground_texture }
+  };
+
+  var water_material = new THREE.ShaderMaterial({
+    uniforms: uniforms,
+    vertexShader: document.getElementById('vertexShader').textContent,
+    fragmentShader: document.getElementById('fragmentShader').textContent
   });
-  // create the mesh and add it to the scene
-  var plane = new THREE.Mesh(geometry, material);
-  myWorld.addObject(plane);
-  plane.receiveShadow = true;
-  plane.rotation.x = -90 * (Math.PI / 180);
-  plane.scale.x = 6
-  plane.scale.y = 6*/
 
-  console.log(draggableObjects);
+  var water_geometry = new THREE.PlaneGeometry(10, 10, 1, 1);
+
+  water = new THREE.Mesh(water_geometry, water_material);
+  water.position.y = watery;
+  water.position.x = 24;
+  water.position.z = 24;
+  water.rotation.x = -90 * (Math.PI / 180);
+  myWorld.addObject(water);
+
+  // water_camera for capturing reflection
+  water_camera = new THREE.PerspectiveCamera(
+    35,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    5000
+  );
+
+  // clipping planes for water_camera
+  globalPlane1 = new THREE.Plane(new THREE.Vector3(0, 1, 0), -watery);
+  globalPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 0), -1);
+  myWorld.renderer.localClippingEnabled = true;
+
   requestAnimationFrame(render);
-  myWorld.scene.simulate();
 
 };
 
 var dayUpdate = true;
 var nightUpdate = true;
+
+
 render = function () {
   requestAnimationFrame(render);
-  render_stats.update();
+
+  // water shader
+  move_factor += 0.001;
+  water.material.uniforms.move_factor.value = move_factor;
+  water.material.uniforms.lightPosition.value = sunLight.object3d.position;
+  move_factor %= 1;
+  var distance = myWorld.camera.position.y * 2;
+  myWorld.renderer.clippingPlanes = [globalPlane1];
+  water_camera.position.set(myWorld.camera.position.x, myWorld.camera.position.y - distance, myWorld.camera.position.z);
+  water_camera.lookAt(new THREE.Vector3(24, 0, 24));
+  myWorld.renderer.render(myWorld.scene, water_camera, reflectionTexture);
+
+  myWorld.renderer.clippingPlanes = [globalPlane2];
   myWorld.render();
   myWorld.controls.update();
+
+  // day night
   sunSphere.update(sunAngle)
   sunLight.update(sunAngle)
   skydom.update(sunAngle)
   starField.update(sunAngle)
   sunAngle += 0.05 / params.DayNightCycle * Math.PI * 2
-  //change building texture
+
+  //update day night texture and variables
   if (sunAngle > 0 && Math.floor(sunAngle / Math.PI) % 2 == 0 && dayUpdate) {
     for (var i = 0; i < lawns.length; i++) {
       lawns[i].updateDay();
     }
     myWorld.addObject(dayLight);
     myWorld.removeObject(nightLight);
+    water_mix = 0.3;
+    water.material.uniforms.water_mix.value = water_mix;
+
     dayUpdate = false;
     nightUpdate = true;
   } else if ((sunAngle < 0 || Math.floor(sunAngle / Math.PI) % 2 == 1) && nightUpdate) {
@@ -289,9 +302,16 @@ render = function () {
     }
     myWorld.addObject(nightLight);
     myWorld.removeObject(dayLight);
+    water_mix = 0.1;
+    water.material.uniforms.water_mix.value = water_mix;
 
     nightUpdate = false;
     dayUpdate = true;
+  }
+
+  //fire 
+  for (var i = 0; i < campfires.length; i++) {
+    campfires[i].update();
   }
 
   //cars
@@ -314,7 +334,6 @@ render = function () {
   }
   for (var i = 0; i < cars.length; i++) {
     cars[i].advance();
-
   }
   for (var i = 0; i < fireworks.length; i++) {
     fireworks[i].update();

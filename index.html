@@ -6,30 +6,101 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
 
-
-
     <script type="text/javascript" src="./dat.gui.min.js"></script>
-    <script type="text/javascript" src="./threex.geometricglow-master/threex.atmospherematerial.js"></script>
-    <script type="text/javascript" src="./threex.geometricglow-master/threex.dilategeometry.js"></script>
-    <script type="text/javascript" src="./threex.geometricglow-master/threex.geometricglowmesh.js"></script>
     <script type="text/javascript" src="./three.js-master/build/three.js"></script>
     <script type="text/javascript" src="./three.js-master/examples/js/objects/Reflector.js"></script>
-    <script type="text/javascript" src="./Physijs-master/examples/js/stats.js"></script>
-    <script type="text/javascript" src="./Physijs-master/physi.js"></script>
     <script type="text/javascript" src="./three.js-master/examples/js/controls/DragControls.js"></script>
     <script type="text/javascript" src="./three.js-master/examples/js/controls/OrbitControls.js"></script>
-    <script type="text/javascript" src="./three.js-master/examples/js/controls/PointerLockControls.js"></script>
-    <script src='./threex.terrain-master/examples/vendor/three.js/examples/js/SimplexNoise.js'></script>
     <script src='./threex.daynight-master/threex.daynight.js'></script>
-    <script type="text/javascript" src="./threex.terrain-master/threex.terrain.js"></script>
 </head>
+
 
 <body>
     <div id="viewport"></div>
+    <div id="viewport2"></div>
+    <script id="vertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        varying vec4 worldPosition;
+        varying vec4 clipSpace;
+        varying vec2 textureCoords;
+        varying vec3 toCameraVector;
+        varying vec3 fromLightVector;
+        uniform vec3 lightPosition;
+        
+        const float tiling = 6.0;
+        
+    	void main()	{
+            worldPosition = modelMatrix * vec4(position, 1.0);
+            vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+            clipSpace = projectionMatrix * modelViewPosition;
+            vUv = uv;
+            textureCoords = vec2(position.x/2.0+0.5, position.y/2.0 + 0.5) * tiling;
+            toCameraVector = cameraPosition - worldPosition.xyz;
+            fromLightVector = worldPosition.xyz - lightPosition;
+            gl_Position = projectionMatrix * modelViewPosition;
+    	}
+    </script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform sampler2D reflectionTexture;
+        uniform sampler2D refractionTexture;
+        uniform sampler2D dudv;
+        uniform sampler2D normalMap;
+        uniform float move_factor;
+        uniform float water_mix;
+        uniform vec3 lightColor;
+
+        const float waveStrength = 0.003;
+        const float shineDamper = 20.0;
+        const float reflectivity = 0.6;
+        varying vec4 clipSpace;
+        varying vec4 worldPosition;
+        varying vec2 textureCoords;
+        varying vec2 vUv;
+        varying vec3 toCameraVector;
+        varying vec3 fromLightVector;
+
+    	void main()	{
+                // dudv distortion
+                vec2 distortion = (texture2D(dudv, vec2(vUv.x+move_factor, vUv.y)).rg * 2.0 - 1.0) *waveStrength;
+                vec2 distortion2 = (texture2D(dudv, vec2(-vUv.x+move_factor, vUv.y + move_factor)).rg * 2.0 - 1.0) *waveStrength;
+                vec2 total_distortion = distortion + distortion2;
+                
+                vec2 ndc = (clipSpace.xy/clipSpace.w)/2.0+0.5;
+                vec2 reflectTexCoords = vec2(ndc.x, 1.0-ndc.y);
+                reflectTexCoords += total_distortion;
+    
+                vec4 reflectionColour = texture2D(reflectionTexture, reflectTexCoords );
+                vec4 refractionColour = texture2D(refractionTexture, vUv + total_distortion);
+                
+                // fresnal effect
+                vec3 viewVector = normalize(toCameraVector);
+                float refractiveFactor = dot (viewVector, vec3(0,1,0));
+                
+                
+                // normal map / specular light
+                vec4 normalMapColor = texture2D(normalMap, reflectTexCoords);
+                vec3 normal = vec3(normalMapColor.r * 2.0 - 1.0, normalMapColor.b, normalMapColor.g * 2.0 - 1.0);
+                normal = normalize(normal);
+
+                vec3 reflectedLight = reflect(normalize(fromLightVector), normal);
+                float specular = max(dot(reflectedLight, viewVector), 0.0);
+                specular = pow(specular, shineDamper);
+                vec3 specularLight = lightColor * specular * reflectivity;
+
+                if (water_mix == 0.1){
+                    gl_FragColor = mix(reflectionColour, refractionColour, 0.1) + vec4(specularLight, 0.0);
+                } else {
+                    gl_FragColor = mix(reflectionColour, refractionColour, refractiveFactor*0.9) + vec4(specularLight, 0.0);
+                }
+                  
+    	}
+    </script>
     <script src="helper_functions.js"></script>
+    <script src="./fireElements.js"></script>
+    <script src="./CampFire.js"></script>
     <script src="./Mirror.js"></script>
     <script src="./House.js"></script>
-    <script src="./Helicopter.js"></script>
     <script src="Firework.js"></script>
     <script src="Car.js"></script>
     <script src="./StreetLight.js"></script>
