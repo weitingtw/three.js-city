@@ -192,7 +192,59 @@ var init = function () {
   fireworks.push(firework1);
   fireworks.push(firework2);
 
-  //fire
+  //tree
+
+  var loader = new THREE.FBXLoader();
+  loader.load('./models/tree.fbx', function (object) {
+    object.scale.x = 0.005;
+    object.scale.y = 0.005;
+    object.scale.z = 0.005;
+    object.position.x = -8;
+    object.position.y = 0;
+    object.position.z = -8;
+
+
+    object.traverse(function (child) {
+
+      if (child.isMesh) {
+
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    for (var i = 0; i < 8; i++) {
+      var newTree = object.clone(true);
+      var x = -8;
+      var y = 0;
+      var z = -8 + i * 8;
+      var rot = Math.random() * Math.PI;
+      newTree.applyMatrix(new THREE.Matrix4().makeRotationY(rot));
+      newTree.position.x = x;
+      newTree.position.y = y;
+      newTree.position.z = z;
+      newTree.scale.x = 0.005;
+      newTree.scale.y = 0.005;
+      newTree.scale.z = 0.005;
+      myWorld.addObject(newTree);
+    }
+
+    for (var i = 0; i < 8; i++) {
+      var newTree = object.clone(true);
+      var x = 56;
+      var y = 0;
+      var z = -8 + i * 8;
+      var rot = Math.random() * Math.PI;
+      newTree.applyMatrix(new THREE.Matrix4().makeRotationY(rot));
+      newTree.position.x = x;
+      newTree.position.y = y;
+      newTree.position.z = z;
+      newTree.scale.x = 0.005;
+      newTree.scale.y = 0.005;
+      newTree.scale.z = 0.005;
+      myWorld.addObject(newTree);
+    }
+
+  });
 
   // Car
   var car1 = new Car(-6.5, 0, -4, myWorld);

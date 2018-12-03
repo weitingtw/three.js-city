@@ -82,14 +82,12 @@ class logs {
         log3.rotateY((2 * PI / 4) * 3.5);
         log3.rotateZ(1.7)
 
-
         this.mesh.add(log3)
 
         var log4 = new THREE.Mesh(this.geom, this.material)
 
         log4.rotateY(2 * PI / 4)
         log4.rotateZ(1.7)
-
 
         this.mesh.add(log4)
         this.mesh.position.x = x;
