@@ -22,7 +22,6 @@ class StreetLight {
         light.position.set(x + 0.45, y + 1.15, z);
         light.add(bulb_mesh);
         light.castShadow = true;
-        lights.push(light);
 
 
         this.streetlight = new THREE.Group();

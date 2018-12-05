@@ -2,7 +2,7 @@ var initScene, render, ground_material, light, ground;
 var sunSphere, sunLight, skydom, starField, sunAngle;
 var myWorld = new World("viewport");
 
-// UI
+// UI parameters
 var params = {
   DayNightCycle: 100,
   addHouse: function () {
@@ -51,24 +51,26 @@ var bulb_material = new THREE.MeshStandardMaterial({
   color: 0xffffee
 });
 
-// global objects
+// store objects for update purpose
 var lawns = [];
 var lights = [];
 var intersections = [];
 var cars = [];
 var fireworks = [];
-var glowMesh = [];
 var campfires = [];
 
+// global objects used in render loop and initialization
 var dayLight;
 var nightLight;
+var dayUpdate = true;
+var nightUpdate = true;
 var bufferScene;
 var reflectionTexture;
 var refractionTexture;
 var reflection_clippingPlane;
 
-var globalPlane1;
-var globalPlane2;
+var waterClippingPlane1;
+var waterClippingPlane2;
 var water;
 var watery;
 var water_camera;
@@ -109,20 +111,6 @@ var init = function () {
   dragControls.addEventListener("dragstart", dragStartCallBack);
   dragControls.addEventListener("dragend", dragEndCallBack);
 
-  // Light
-  light = new THREE.DirectionalLight(0xFFFFFF);
-  light.position.set(20, 40, -15);
-  light.target.position.copy(myWorld.scene.position);
-  light.castShadow = true;
-  light.shadowCameraLeft = -60;
-  light.shadowCameraTop = -60;
-  light.shadowCameraRight = 60;
-  light.shadowCameraBottom = 60;
-  light.shadowCameraNear = 20;
-  light.shadowCameraFar = 200;
-  light.shadowBias = -.0001
-  light.shadowMapWidth = light.shadowMapHeight = 2048;
-  light.shadowDarkness = .7;
 
   // day night ambient light
   nightLight = new THREE.AmbientLight(0x404040);
@@ -166,6 +154,7 @@ var init = function () {
       intersections.push(new Intersection(-6 + i * 12, 0.03, -6 + j * 12, 2, 2, intersection_texture, myWorld, boundary1, boundary2));
     }
   }
+
   // ground
   ground_material = new THREE.MeshLambertMaterial({
     color: 0x8B4513,
@@ -186,6 +175,7 @@ var init = function () {
       }
     }
   }
+
   //firework
   var firework1 = new Firework(myWorld);
   var firework2 = new Firework(myWorld);
@@ -193,7 +183,6 @@ var init = function () {
   fireworks.push(firework2);
 
   //tree
-
   var loader = new THREE.FBXLoader();
   loader.load('./models/tree.fbx', function (object) {
     object.scale.x = 0.005;
@@ -203,15 +192,13 @@ var init = function () {
     object.position.y = 0;
     object.position.z = -8;
 
-
     object.traverse(function (child) {
-
       if (child.isMesh) {
-
         child.castShadow = true;
         child.receiveShadow = true;
       }
     });
+
     for (var i = 0; i < 8; i++) {
       var newTree = object.clone(true);
       var x = -8;
@@ -299,33 +286,31 @@ var init = function () {
   );
 
   // clipping planes for water_camera
-  globalPlane1 = new THREE.Plane(new THREE.Vector3(0, 1, 0), -watery);
-  globalPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 0), -1);
+  waterClippingPlane1 = new THREE.Plane(new THREE.Vector3(0, 1, 0), -watery);
+  waterClippingPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 0), -1);
   myWorld.renderer.localClippingEnabled = true;
 
   requestAnimationFrame(render);
 
 };
 
-var dayUpdate = true;
-var nightUpdate = true;
-
-
+// main render loop
 render = function () {
   requestAnimationFrame(render);
 
-  // water shader
+  /* water shader update */
   move_factor += 0.001;
   water.material.uniforms.move_factor.value = move_factor;
   water.material.uniforms.lightPosition.value = sunLight.object3d.position;
   move_factor %= 1;
+  // store reflection texture
   var distance = myWorld.camera.position.y * 2;
-  myWorld.renderer.clippingPlanes = [globalPlane1];
+  myWorld.renderer.clippingPlanes = [waterClippingPlane1];
   water_camera.position.set(myWorld.camera.position.x, myWorld.camera.position.y - distance, myWorld.camera.position.z);
   water_camera.lookAt(new THREE.Vector3(24, 0, 24));
   myWorld.renderer.render(myWorld.scene, water_camera, reflectionTexture);
 
-  myWorld.renderer.clippingPlanes = [globalPlane2];
+  myWorld.renderer.clippingPlanes = [waterClippingPlane2];
   myWorld.render();
   myWorld.controls.update();
 
@@ -366,7 +351,7 @@ render = function () {
     campfires[i].update();
   }
 
-  //cars
+  //car movement
   for (var j = 0; j < cars.length; j++) {
     var no_intersection = true;
     for (var i = 0; i < intersections.length; i++) {
@@ -387,6 +372,8 @@ render = function () {
   for (var i = 0; i < cars.length; i++) {
     cars[i].advance();
   }
+
+  // firework
   for (var i = 0; i < fireworks.length; i++) {
     fireworks[i].update();
   }

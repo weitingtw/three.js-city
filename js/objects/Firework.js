@@ -14,7 +14,6 @@ class Firework {
             transparent: true,
             depthTest: false,
         });
-
         this.launch();
     }
     reset() {
@@ -67,11 +66,14 @@ class Firework {
             color.setHSL(THREE.Math.randFloat(0.1, 0.9), 1, 0.5);
             this.colors.push(color);
 
+            // store current position of each particle
             var from = new THREE.Vector3(
                 THREE.Math.randInt(vector.x, vector.x),
                 THREE.Math.randInt(vector.y, vector.y),
                 THREE.Math.randInt(vector.z, vector.z)
             );
+
+            // position to explode towards
             var to = new THREE.Vector3(
                 THREE.Math.randInt(vector.x - 5, vector.x + 5),
                 THREE.Math.randInt(vector.y - 5, vector.y + 5),
@@ -97,7 +99,7 @@ class Firework {
                 this.geometry.vertices[i].z += (this.dest[i].z - this.geometry.vertices[i].z) / 20;
                 this.geometry.verticesNeedUpdate = true;
             }
-            // watch first particle for explosion 
+            // explode when only one particle 
             if (total === 1) {
                 if (Math.ceil(this.geometry.vertices[0].y) > (this.dest[0].y - 20)) {
                     this.explode(this.geometry.vertices[0]);

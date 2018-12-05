@@ -1,5 +1,5 @@
 /*
- An implementation of the a World, which takes a Canvas ID as the argument. 
+ An implementation of a World, which takes a Canvas ID as the argument. 
  use World.addObject()/removeObject() to add/remove objects to the scene
  The THREE.TrackballControls is provided by Three.js in its examples.
  */
