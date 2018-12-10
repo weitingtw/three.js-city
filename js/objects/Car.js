@@ -81,23 +81,23 @@ class Car {
     }
 
     advance() {
-        if (this.isTurning && this.t <= 0.99) {
+        if (this.isTurning && this.t <= 0.98) {
             if (this.curve == "straight") {
-                this.car.position.x += this.direction.x / 30;
-                this.car.position.y += this.direction.y / 30;
-                this.car.position.z += this.direction.z / 30;
+                this.car.position.x += this.direction.x / 15;
+                this.car.position.y += this.direction.y / 15;
+                this.car.position.z += this.direction.z / 15;
             } else {
                 this.car.position.x = this.curve.getPointAt(this.t).x;
                 this.car.position.y = this.curve.getPointAt(this.t).y;
                 this.car.position.z = this.curve.getPointAt(this.t).z;
                 this.car.lookAt(this.curve.getPointAt(this.t + 0.01));
             }
-            this.t += 0.01;
+            this.t += 0.02;
         }
         else {
-            this.car.position.x += this.direction.x / 30;
-            this.car.position.y += this.direction.y / 30;
-            this.car.position.z += this.direction.z / 30;
+            this.car.position.x += this.direction.x / 15;
+            this.car.position.y += this.direction.y / 15;
+            this.car.position.z += this.direction.z / 15;
         }
     }
 }
