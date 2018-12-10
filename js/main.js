@@ -239,7 +239,7 @@ var init = function () {
   var car1 = new Car(-6.5, 0, -4, myWorld);
   var car2 = new Car(5.5, 0, 10, myWorld);
   var car3 = new Car(29.5, 0, 40, myWorld);
-  var car3 = new Car(41.5, 0, 30, myWorld);
+  var car4 = new Car(41.5, 0, 30, myWorld);
 
   cars.push(car1);
   cars.push(car2);
