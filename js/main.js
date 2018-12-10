@@ -162,7 +162,7 @@ var init = function () {
   });
   var ground_geometry = new THREE.PlaneGeometry(200, 200, 1, 1);
   ground = new THREE.Mesh(ground_geometry, ground_material);
-  //ground.receiveShadow = true;
+  ground.receiveShadow = true;
   ground.rotation.x = -90 * (Math.PI / 180);
   myWorld.addObject(ground);
 
@@ -179,8 +179,10 @@ var init = function () {
   //firework
   var firework1 = new Firework(myWorld);
   var firework2 = new Firework(myWorld);
+  var firework3 = new Firework(myWorld);
   fireworks.push(firework1);
   fireworks.push(firework2);
+  fireworks.push(firework3);
 
   //tree
   var loader = new THREE.FBXLoader();
@@ -236,8 +238,13 @@ var init = function () {
   // Car
   var car1 = new Car(-6.5, 0, -4, myWorld);
   var car2 = new Car(5.5, 0, 10, myWorld);
+  var car3 = new Car(29.5, 0, 40, myWorld);
+  var car3 = new Car(41.5, 0, 30, myWorld);
+
   cars.push(car1);
   cars.push(car2);
+  cars.push(car3);
+  cars.push(car4);
 
 
   //water 

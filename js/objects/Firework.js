@@ -34,9 +34,8 @@ class Firework {
 
     launch() {
         var x = THREE.Math.randInt(0, 60);
-        var y = THREE.Math.randInt(15, 25);
+        var y = THREE.Math.randInt(25, 35);
         var z = THREE.Math.randInt(0, 60);
-
 
         var from = new THREE.Vector3(x, 0, z);
         var to = new THREE.Vector3(x, y, z);
