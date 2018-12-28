@@ -1,7 +1,7 @@
 # Wei-Tings-City
 
 ## Usage:
-Github Pages: https://uwgraphics.github.io/Wei-Tings-City/
+Github Pages: https://weitingtw.github.io/three.js-city/
 Notes: it may take a while to load all the resources needed.
 
 ## Resources
